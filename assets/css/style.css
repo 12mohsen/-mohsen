@@ -667,6 +667,14 @@ input:focus {
 
     .link-actions {
         width: 100%;
-        justify-content: flex-end;
+        flex-wrap: wrap;
+        justify-content: flex-start;
+        gap: 0.5rem;
+    }
+
+    .link-actions .btn {
+        flex: 1 1 120px;
+        font-size: 0.8rem;
+        padding-inline: 0.8rem;
     }
 }
