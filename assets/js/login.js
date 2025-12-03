@@ -1,4 +1,15 @@
 document.addEventListener("DOMContentLoaded", () => {
+    // إذا كان المستخدم مسجَّلاً من قبل، انتقل مباشرة للوحة التحكم
+    try {
+        const existingUser = localStorage.getItem("loggedInUser");
+        if (existingUser) {
+            window.location.href = "dashboard.html";
+            return;
+        }
+    } catch (e) {
+        // في حال تعطل localStorage نستمر في عرض صفحة الدخول بشكل عادي
+    }
+
     const brandNameEnLogin = document.getElementById("brandNameEnLogin");
     const brandNameArLogin = document.getElementById("brandNameArLogin");
     const trialHintEl = document.getElementById("trialHint");
