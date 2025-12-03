@@ -546,9 +546,8 @@ input:focus {
     font-size: 0.82rem;
     color: var(--accent);
     text-decoration: none;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    white-space: normal;
+    word-break: break-all;
 }
 
 .link-url:hover {
@@ -650,6 +649,11 @@ input:focus {
 
     .dashboard-main {
         padding-inline: 1.1rem;
+    }
+
+    .links-list {
+        max-height: none;
+        overflow-y: visible;
     }
 
     .form-row {
