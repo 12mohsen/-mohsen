@@ -3,6 +3,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const logoutBtn = document.getElementById("logoutBtn");
     const linkForm = document.getElementById("linkForm");
     const linksList = document.getElementById("linksList");
+    const linksCountEl = document.getElementById("linksCount");
     const statusBox = document.getElementById("statusMessage");
     const searchInput = document.getElementById("searchInput");
     const previewOverlay = document.getElementById("linkPreviewOverlay");
@@ -248,6 +249,13 @@ document.addEventListener("DOMContentLoaded", () => {
         const links = loadLinks();
         linksList.innerHTML = "";
 
+        if (linksCountEl) {
+            const total = links.length;
+            linksCountEl.textContent = total
+                ? `عدد الروابط المحفوظة: ${total}`
+                : "لا توجد روابط محفوظة حتى الآن";
+        }
+
         const term = filterText.trim().toLowerCase();
         const base = links
             .slice()
@@ -320,11 +328,31 @@ document.addEventListener("DOMContentLoaded", () => {
             const actions = document.createElement("div");
             actions.className = "link-actions";
 
-            const copyBtn = document.createElement("button");
-            copyBtn.className = "btn btn-outline";
-            copyBtn.type = "button";
-            copyBtn.textContent = "نسخ الرابط";
-            copyBtn.addEventListener("click", async () => {
+            const copyTitleUrlBtn = document.createElement("button");
+            copyTitleUrlBtn.className = "btn btn-outline";
+            copyTitleUrlBtn.type = "button";
+            copyTitleUrlBtn.textContent = "نسخ العنوان + الرابط";
+            copyTitleUrlBtn.addEventListener("click", async () => {
+                try {
+                    if (navigator.clipboard && navigator.clipboard.writeText) {
+                        const titlePart = "★" + (link.title || "").trim();
+                        const textToCopy = `${titlePart}\n${link.url}`;
+                        await navigator.clipboard.writeText(textToCopy);
+                        showStatus("تم نسخ العنوان والرابط إلى الحافظة.", "success");
+                    } else {
+                        showStatus("متصفحك لا يدعم النسخ التلقائي.", "error");
+                    }
+                } catch (err) {
+                    console.error("copy failed", err);
+                    showStatus("تعذر نسخ الرابط.", "error");
+                }
+            });
+
+            const copyUrlBtn = document.createElement("button");
+            copyUrlBtn.className = "btn btn-outline";
+            copyUrlBtn.type = "button";
+            copyUrlBtn.textContent = "نسخ الرابط فقط";
+            copyUrlBtn.addEventListener("click", async () => {
                 try {
                     if (navigator.clipboard && navigator.clipboard.writeText) {
                         await navigator.clipboard.writeText(link.url);
@@ -356,7 +384,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 showStatus("تم حذف الرابط بنجاح.", "success");
             });
 
-            actions.appendChild(copyBtn);
+            actions.appendChild(copyTitleUrlBtn);
+            actions.appendChild(copyUrlBtn);
             actions.appendChild(deleteBtn);
 
             item.appendChild(main);
