@@ -586,6 +586,19 @@ input:focus {
     color: #fecaca;
 }
 
+@media (max-width: 900px) {
+    .preview-header {
+        flex-wrap: wrap;
+        gap: 0.6rem;
+    }
+
+    .preview-actions {
+        flex-wrap: wrap;
+        justify-content: flex-start;
+        gap: 0.5rem;
+    }
+}
+
 @media (max-width: 640px) {
     .auth-card {
         padding: 1.8rem 1.4rem 2rem;
