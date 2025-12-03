@@ -652,8 +652,8 @@ input:focus {
     }
 
     .links-list {
-        max-height: none;
-        overflow-y: visible;
+        max-height: 50vh;
+        overflow-y: auto;
     }
 
     .form-row {
