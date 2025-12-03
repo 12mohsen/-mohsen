@@ -44,7 +44,8 @@ html[dir="rtl"] body {
     align-items: center;
     justify-content: flex-start;
     padding: 1.5rem;
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: auto;
 }
 
 .auth-overlay::before,
