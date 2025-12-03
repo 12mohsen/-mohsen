@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mohsen Hub - Vue SPA</title>
+    <link rel="stylesheet" href="../assets/css/style.css" />
+</head>
+<body class="auth-body">
+    <div id="app">
+        <div
+            class="preview-overlay"
+            :class="{ 'is-open': isPreviewOpen }"
+            :aria-hidden="isPreviewOpen ? 'false' : 'true'"
+        >
+            <div class="preview-backdrop" @click="closePreview"></div>
+            <div class="preview-dialog" role="dialog" aria-modal="true" v-if="isPreviewOpen">
+                <header class="preview-header">
+                    <div class="preview-title-group">
+                        <span class="preview-label">معاينة الرابط</span>
+                        <div class="preview-title-row">
+                            <img :src="previewFavicon" class="preview-favicon" alt="" v-if="previewFavicon" />
+                            <div class="preview-title">{{ previewTitle || previewUrl }}</div>
+                        </div>
+                    </div>
+                    <div class="preview-actions">
+                        <a
+                            class="btn btn-outline"
+                            :href="previewUrl || '#'"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                        >
+                            فتح في تبويب جديد
+                        </a>
+                        <button type="button" class="btn btn-danger" @click="closePreview">إغلاق</button>
+                    </div>
+                </header>
+                <div class="preview-body">
+                    <div v-if="isPreviewLoading" class="preview-loader">جارٍ تحميل الصفحة...</div>
+                    <iframe
+                        id="vuePreviewFrame"
+                        :src="previewUrl || 'about:blank'"
+                        title="معاينة الرابط"
+                        loading="lazy"
+                        @load="onPreviewLoaded"
+                    ></iframe>
+                </div>
+            </div>
+        </div>
+
+        <div class="auth-overlay" v-if="!loggedInUser"></div>
+
+        <main class="auth-container" v-if="!loggedInUser">
+            <section class="auth-card">
+                <header class="auth-header">
+                    <div class="brand-mark">
+                        <span class="brand-mark-dot"></span>
+                        <span>
+                            Mohsen Hub
+                            <span style="display:block; font-size:0.78em; color:var(--text-muted);">محسن هَب (Vue)</span>
+                        </span>
+                    </div>
+                    <h1 class="auth-title">مرحباً بعودتك</h1>
+                    <p class="auth-subtitle">سجّل الدخول لإدارة روابطك الشخصية</p>
+                </header>
+                <form class="auth-form" @submit.prevent="handleLogin">
+                    <div class="form-group">
+                        <label for="username">اسم المستخدم</label>
+                        <input type="text" id="username" v-model.trim="loginForm.username" placeholder="اكتب اسم المستخدم" required />
+                    </div>
+                    <div class="form-group">
+                        <label for="password">كلمة المرور</label>
+                        <input type="password" id="password" v-model="loginForm.password" placeholder="اكتب كلمة المرور" required />
+                    </div>
+                    <div class="form-error">{{ loginError }}</div>
+                    <button type="submit" class="btn btn-primary btn-full">تسجيل الدخول</button>
+                    <div class="auth-footer-links">
+                        <a href="#" class="link-muted">نسيت كلمة المرور؟</a>
+                    </div>
+                </form>
+            </section>
+        </main>
+
+        <div v-else class="dashboard-body" style="min-height:100vh;">
+            <header class="top-nav">
+                <div class="nav-left">
+                    <div class="brand-mark">
+                        <span class="brand-mark-dot"></span>
+                        <span>
+                            Mohsen Hub
+                            <span style="display:block; font-size:0.78em; color:var(--text-muted);">محسن هَب (Vue)</span>
+                        </span>
+                    </div>
+                    <h1 class="app-title">روابطي</h1>
+                </div>
+                <div class="nav-right">
+                    <div class="links-filters" style="margin-inline-end:0.5rem;">
+                        <div class="links-category-filter">
+                            <select v-model="theme" class="search-input" style="min-width: 150px;">
+                                <option value="green">ثيم أخضر</option>
+                                <option value="blue">ثيم أزرق</option>
+                                <option value="purple">ثيم بنفسجي</option>
+                            </select>
+                        </div>
+                    </div>
+                    <span class="user-badge">{{ loggedInUser }}</span>
+                    <button class="btn btn-outline" @click="handleLogout">تسجيل الخروج</button>
+                </div>
+            </header>
+
+            <main class="dashboard-main">
+                <section class="card add-link-card">
+                    <h2 class="section-title">إضافة رابط جديد</h2>
+                    <div id="statusMessage" class="status-message" :class="statusClass" aria-live="polite">{{ statusMessage }}</div>
+                    <form class="link-form" @submit.prevent="handleAddLink">
+                        <div class="form-row">
+                            <div class="form-group flex-2">
+                                <label for="linkTitle">اسم الموقع / العنوان</label>
+                                <input type="text" id="linkTitle" v-model.trim="newLink.title" placeholder="مثال: موقعي الشخصي" required />
+                            </div>
+                            <div class="form-group flex-3">
+                                <label for="linkUrl">الرابط (URL)</label>
+                                <input type="url" id="linkUrl" v-model.trim="newLink.url" placeholder="https://example.com" required />
+                            </div>
+                            <div class="form-group form-group-button">
+                                <label>&nbsp;</label>
+                                <button type="submit" class="btn btn-primary btn-full">إضافة الرابط</button>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group flex-2">
+                                <label for="linkCategory">التصنيف</label>
+                                <select id="linkCategory" v-model="newLink.category" class="search-input">
+                                    <option value="">بدون تصنيف</option>
+                                    <option value="اجتماعي">اجتماعي</option>
+                                    <option value="عمل">عمل</option>
+                                    <option value="تعلم">تعلم</option>
+                                    <option value="شخصي">شخصي</option>
+                                    <option value="أخرى">أخرى</option>
+                                </select>
+                            </div>
+                        </div>
+                    </form>
+                </section>
+
+                <section class="card links-card">
+                    <div class="links-card-header">
+                        <div>
+                            <h2 class="section-title">الروابط المحفوظة</h2>
+                            <small class="links-hint">يتم حفظ الروابط محلياً في متصفحك</small>
+                        </div>
+                        <div class="links-filters">
+                            <div class="links-search">
+                                <input
+                                    type="text"
+                                    id="searchInput"
+                                    class="search-input"
+                                    placeholder="بحث بالعنوان أو الرابط"
+                                    v-model="searchTerm"
+                                />
+                            </div>
+                            <div class="links-category-filter">
+                                <select v-model="categoryFilter" class="search-input">
+                                    <option value="all">كل التصنيفات</option>
+                                    <option value="اجتماعي">اجتماعي</option>
+                                    <option value="عمل">عمل</option>
+                                    <option value="تعلم">تعلم</option>
+                                    <option value="شخصي">شخصي</option>
+                                    <option value="أخرى">أخرى</option>
+                                    <option value="">بدون تصنيف</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="links-list">
+                        <div v-if="filteredLinks.length === 0" class="links-empty">
+                            {{ links.length === 0 ? "لا توجد روابط حتى الآن. ابدأ بإضافة أول رابط من الأعلى." : "لا توجد نتائج مطابقة لبحثك." }}
+                        </div>
+                        <div v-else v-for="(link, index) in filteredLinks" :key="link.id" class="link-item">
+                            <div class="link-main">
+                                <div class="link-title">
+                                    <button
+                                        type="button"
+                                        class="fav-toggle"
+                                        :class="{ 'fav-toggle--active': link.isFavorite }"
+                                        @click="toggleFavorite(link)"
+                                        :title="link.isFavorite ? 'إزالة من المفضلة' : 'إضافة إلى المفضلة'"
+                                    >
+                                        ★
+                                    </button>
+                                    <span>{{ link.title || 'بدون عنوان' }}</span>
+                                </div>
+                                <a
+                                    :href="link.url"
+                                    class="link-url"
+                                    @click.prevent="openPreview(link.url, link.title)"
+                                >
+                                    {{ link.url }}
+                                </a>
+                            </div>
+                            <div class="link-actions">
+                                <button class="btn btn-outline" type="button" @click="copyLink(link)">نسخ الرابط</button>
+                                <button class="btn btn-danger" type="button" @click="deleteLink(index)">حذف</button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+    <script>
+        const { createApp, computed, onMounted } = Vue;
+
+        createApp({
+            setup() {
+                const loginForm = Vue.reactive({
+                    username: "",
+                    password: "",
+                });
+
+                const newLink = Vue.reactive({
+                    title: "",
+                    url: "",
+                    category: "",
+                });
+
+                const state = Vue.reactive({
+                    loggedInUser: localStorage.getItem("loggedInUser") || "",
+                    links: [],
+                    searchTerm: "",
+                    categoryFilter: "all",
+                    loginError: "",
+                    statusMessage: "",
+                    statusType: "info",
+                    theme: "green",
+                    previewUrl: "",
+                    previewTitle: "",
+                    isPreviewOpen: false,
+                    isPreviewLoading: false,
+                });
+
+                const filteredLinks = computed(() => {
+                    const term = state.searchTerm.trim().toLowerCase();
+
+                    const base = state.links
+                        .slice()
+                        .sort((a, b) => (b.isFavorite === true) - (a.isFavorite === true));
+
+                    let list = base;
+
+                    if (state.categoryFilter !== "all") {
+                        list = list.filter((link) => (link.category || "") === state.categoryFilter);
+                    }
+
+                    if (!term) return list;
+
+                    return list.filter((link) => {
+                        const t = (link.title || "").toLowerCase();
+                        const u = (link.url || "").toLowerCase();
+                        return t.includes(term) || u.includes(term);
+                    });
+                });
+
+                const statusClass = computed(() => {
+                    return {
+                        "status-message--success": state.statusType === "success",
+                        "status-message--error": state.statusType === "error",
+                    };
+                });
+
+                function showStatus(message, type = "info") {
+                    state.statusMessage = message || "";
+                    state.statusType = type;
+                }
+
+                function applyTheme(themeKey) {
+                    const root = document.documentElement;
+                    const themes = {
+                        green: {
+                            bg: "linear-gradient(135deg, #022c22, #064e3b, #10b981)",
+                            accent: "#10b981",
+                            accentSoft: "rgba(16, 185, 129, 0.18)",
+                            accentStrong: "#059669",
+                        },
+                        blue: {
+                            bg: "linear-gradient(135deg, #0f172a, #1e293b, #2563eb)",
+                            accent: "#3b82f6",
+                            accentSoft: "rgba(59, 130, 246, 0.18)",
+                            accentStrong: "#1d4ed8",
+                        },
+                        purple: {
+                            bg: "linear-gradient(135deg, #1e1b4b, #312e81, #a855f7)",
+                            accent: "#a855f7",
+                            accentSoft: "rgba(168, 85, 247, 0.2)",
+                            accentStrong: "#7c3aed",
+                        },
+                    };
+
+                    const config = themes[themeKey] || themes.green;
+                    root.style.setProperty("--bg-gradient", config.bg);
+                    root.style.setProperty("--accent", config.accent);
+                    root.style.setProperty("--accent-soft", config.accentSoft);
+                    root.style.setProperty("--accent-strong", config.accentStrong);
+                }
+
+                function loadLinks() {
+                    try {
+                        const data = localStorage.getItem("userLinks");
+                        const parsed = data ? JSON.parse(data) : [];
+                        // تأكد من وجود isFavorite و category لكل رابط
+                        state.links = parsed.map((l) => ({
+                            isFavorite: false,
+                            category: "",
+                            ...l,
+                        }));
+                    } catch (e) {
+                        state.links = [];
+                    }
+                }
+
+                function toggleFavorite(link) {
+                    const idx = state.links.findIndex((l) => l.id === link.id);
+                    if (idx !== -1) {
+                        state.links[idx].isFavorite = !state.links[idx].isFavorite;
+                        saveLinks();
+                        showStatus(
+                            state.links[idx].isFavorite ? "تمت إضافة الرابط إلى المفضلة." : "تمت إزالة الرابط من المفضلة.",
+                            "success"
+                        );
+                    }
+                }
+
+                function saveLinks() {
+                    localStorage.setItem("userLinks", JSON.stringify(state.links));
+                }
+
+                function openPreview(url, title) {
+                    if (!url) return;
+                    state.previewUrl = url;
+                    state.previewTitle = title || "";
+                    state.isPreviewOpen = true;
+                    state.isPreviewLoading = true;
+                }
+
+                function closePreview() {
+                    state.isPreviewOpen = false;
+                    state.isPreviewLoading = false;
+                    state.previewUrl = "";
+                    state.previewTitle = "";
+                }
+
+                function onPreviewLoaded() {
+                    state.isPreviewLoading = false;
+                }
+
+                function handleLogin() {
+                    state.loginError = "";
+                    if (loginForm.username === "admin" && loginForm.password === "12345") {
+                        state.loggedInUser = loginForm.username;
+                        localStorage.setItem("loggedInUser", state.loggedInUser);
+                        loadLinks();
+                    } else {
+                        state.loginError = "اسم المستخدم أو كلمة المرور غير صالحة. جرب ال admin / 12345.";
+                    }
+                }
+
+                function handleLogout() {
+                    state.loggedInUser = "";
+                    localStorage.removeItem("loggedInUser");
+                }
+
+                function handleAddLink() {
+                    showStatus("");
+                    if (!newLink.title.trim() || !newLink.url.trim()) {
+                        showStatus("يرجى إدخال العنوان والرابط قبل الإضافة.", "error");
+                        return;
+                    }
+
+                    let url = newLink.url.trim();
+                    if (!/^https?:\/\//i.test(url)) {
+                        url = "https://" + url;
+                    }
+
+                    state.links.push({
+                        id: Date.now(),
+                        title: newLink.title.trim(),
+                        url,
+                        owner: state.loggedInUser,
+                        isFavorite: false,
+                        category: newLink.category,
+                    });
+                    saveLinks();
+                    showStatus("تمت إضافة الرابط بنجاح.", "success");
+
+                    newLink.title = "";
+                    newLink.url = "";
+                }
+
+                function deleteLink(indexInFiltered) {
+                    const confirmed = window.confirm("هل أنت متأكد من حذف هذا الرابط؟");
+                    if (!confirmed) return;
+
+                    const target = filteredLinks.value[indexInFiltered];
+                    const realIndex = state.links.findIndex((l) => l.id === target.id);
+                    if (realIndex !== -1) {
+                        state.links.splice(realIndex, 1);
+                        saveLinks();
+                        showStatus("تم حذف الرابط بنجاح.", "success");
+                    }
+                }
+
+                async function copyLink(link) {
+                    try {
+                        if (navigator.clipboard && navigator.clipboard.writeText) {
+                            await navigator.clipboard.writeText(link.url);
+                            showStatus("تم نسخ الرابط إلى الحافظة.", "success");
+                        } else {
+                            showStatus("متصفحك لا يدعم النسخ التلقائي.", "error");
+                        }
+                    } catch (e) {
+                        showStatus("تعذر نسخ الرابط.", "error");
+                    }
+                }
+
+                onMounted(() => {
+                    loadSettings();
+                    if (!state.theme) {
+                        state.theme = "green";
+                        applyTheme(state.theme);
+                    }
+                    if (state.loggedInUser) {
+                        loadLinks();
+                    }
+                });
+
+                return {
+                    loginForm,
+                    newLink,
+                    ...Vue.toRefs(state),
+                    filteredLinks,
+                    statusClass,
+                    handleLogin,
+                    handleLogout,
+                    handleAddLink,
+                    deleteLink,
+                    copyLink,
+                    toggleFavorite,
+                    applyTheme,
+                    loadSettings,
+                    saveSettings,
+                    openPreview,
+                    closePreview,
+                    onPreviewLoaded,
+                };
+            },
+        }).mount("#app");
+    </script>
+</body>
+</html>
