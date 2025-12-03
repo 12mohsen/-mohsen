@@ -16,6 +16,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const brandNameArEl = document.getElementById("brandNameAr");
     const editBrandBtn = document.getElementById("editBrandBtn");
     const toggleTrialHintBtn = document.getElementById("toggleTrialHintBtn");
+    const changePasswordBtn = document.getElementById("changePasswordBtn");
 
     const loggedInUser = localStorage.getItem("loggedInUser");
     if (!loggedInUser) {
@@ -89,6 +90,29 @@ document.addEventListener("DOMContentLoaded", () => {
         logoutBtn.addEventListener("click", () => {
             localStorage.removeItem("loggedInUser");
             window.location.href = "index.html";
+        });
+    }
+
+    if (changePasswordBtn) {
+        changePasswordBtn.addEventListener("click", () => {
+            const currentStored = localStorage.getItem("adminPassword") || "12345";
+            const oldInput = window.prompt("اكتب كلمة السر الحالية:", "");
+            if (oldInput === null) return;
+            if (oldInput !== currentStored) {
+                showStatus("كلمة السر الحالية غير صحيحة.", "error");
+                return;
+            }
+
+            const newPass = window.prompt("اكتب كلمة السر الجديدة:", "");
+            if (newPass === null) return;
+            const trimmed = newPass.trim();
+            if (!trimmed) {
+                showStatus("لا يمكن أن تكون كلمة السر فارغة.", "error");
+                return;
+            }
+
+            localStorage.setItem("adminPassword", trimmed);
+            showStatus("تم تحديث كلمة السر بنجاح.", "success");
         });
     }
 

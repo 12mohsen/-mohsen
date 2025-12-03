@@ -62,9 +62,17 @@ document.addEventListener("DOMContentLoaded", () => {
         const username = document.getElementById("username").value.trim();
         const password = document.getElementById("password").value;
 
+        let storedPassword = "12345";
+        try {
+            const saved = localStorage.getItem("adminPassword");
+            if (saved && typeof saved === "string") {
+                storedPassword = saved;
+            }
+        } catch (e) {}
+
         errorBox.textContent = "";
 
-        if (username === "admin" && password === "12345") {
+        if (username === "admin" && password === storedPassword) {
             localStorage.setItem("loggedInUser", username);
             window.location.href = "dashboard.html";
         } else {
